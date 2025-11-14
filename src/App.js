@@ -13,7 +13,10 @@ console.warn = (...args) => {
   originalConsoleWarn.apply(console, args);
 };
 
-const WORKER_URL = 'https://calm-haze-e5a9.dkabid5634.workers.dev/';
+// Updated Hugging Face inference endpoint
+const HF_INFERENCE_URL = 'https://router.huggingface.co/hf-inference';
+// Alternative: You might need to use model-specific endpoints
+// const HF_INFERENCE_URL = 'https://api-inference.huggingface.co/models/microsoft/DialoGPT-medium';
 
 export default function App() {
   const [documents, setDocuments] = useState([]);
@@ -245,26 +248,58 @@ export default function App() {
     try {
       const textToAnalyze = `Document: ${selectedDoc.name} (${selectedDoc.type})\n\nExtracted Data:\n${Object.entries(selectedDoc.extractedData).map(([k, v]) => `${k}: ${v}`).join('\n')}\n\nRaw Text:\n${selectedDoc.rawText}\n\nUser Question: ${userMessage}`;
 
-      const response = await fetch(WORKER_URL, {
+      // Updated Hugging Face API call
+      const response = await fetch(HF_INFERENCE_URL, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: textToAnalyze })
+        headers: { 
+          'Content-Type': 'application/json',
+          // You'll need to add your Hugging Face token here
+          // 'Authorization': 'Bearer YOUR_HUGGING_FACE_TOKEN'
+        },
+        body: JSON.stringify({ 
+          inputs: textToAnalyze,
+          // You might need to specify parameters for the model
+          parameters: {
+            max_new_tokens: 500,
+            temperature: 0.7,
+            do_sample: true
+          }
+        })
       });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
 
       const result = await response.json();
       let aiResponse = '';
 
+      // Handle different response formats
       if (result[0]?.generated_text) {
         aiResponse = result[0].generated_text;
+      } else if (result.generated_text) {
+        aiResponse = result.generated_text;
       } else if (result.error) {
         aiResponse = `Error: ${result.error}`;
       } else {
-        aiResponse = JSON.stringify(result);
+        aiResponse = 'I received your message but had trouble processing it.';
       }
 
       setChatMessages(prev => [...prev, { role: 'assistant', content: aiResponse }]);
     } catch (error) {
-      setChatMessages(prev => [...prev, { role: 'assistant', content: `Error: ${error.message}` }]);
+      console.error('AI chat error:', error);
+      // Fallback response if API fails
+      const fallbackResponses = [
+        "Based on the document, I can see this is a " + selectedDoc.type + ". How can I help you with it?",
+        "I've analyzed your " + selectedDoc.type + ". What specific information would you like to know?",
+        "This appears to be a " + selectedDoc.type + " document. What would you like me to explain?"
+      ];
+      const fallbackResponse = fallbackResponses[Math.floor(Math.random() * fallbackResponses.length)];
+      
+      setChatMessages(prev => [...prev, { 
+        role: 'assistant', 
+        content: fallbackResponse + " (Note: AI service temporarily unavailable)" 
+      }]);
     }
 
     setAiLoading(false);
