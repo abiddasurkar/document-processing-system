@@ -1,0 +1,13 @@
+{
+  "files": {
+    "main.css": "/document-processing-system/static/css/main.3ca5e4f9.css",
+    "main.js": "/document-processing-system/static/js/main.7d0ab59d.js",
+    "index.html": "/document-processing-system/index.html",
+    "main.3ca5e4f9.css.map": "/document-processing-system/static/css/main.3ca5e4f9.css.map",
+    "main.7d0ab59d.js.map": "/document-processing-system/static/js/main.7d0ab59d.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.3ca5e4f9.css",
+    "static/js/main.7d0ab59d.js"
+  ]
+}
